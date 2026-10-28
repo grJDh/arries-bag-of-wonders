@@ -1,53 +1,61 @@
 name: Release module
 
-# Релиз собирается сам при пуше тега вида v1.2.0.
+# Релиз создаётся сам: при каждом слиянии в main workflow смотрит на version в module.json
+# и, если релиза с таким номером ещё нет, собирает module.zip и публикует его.
 on:
   push:
-    tags: ["v*"]
-  release:
-    types: [published]
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read tag
-        id: tag
+      - name: Read version
+        id: v
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "name=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          VERSION=$(jq -r .version module.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether this version is already released
+        id: exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.v.outputs.tag }}" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Release ${{ steps.v.outputs.tag }} already exists, nothing to do."
           else
-            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set version and links from the tag
+      - name: Set links for this version
+        if: steps.exists.outputs.found == 'false'
         env:
-          TAG: ${{ steps.tag.outputs.name }}
+          TAG: ${{ steps.v.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
-          VERSION="${TAG#v}"
-          jq --arg v "$VERSION" \
-             --arg manifest "https://github.com/$REPO/releases/latest/download/module.json" \
+          jq --arg manifest "https://github.com/$REPO/releases/latest/download/module.json" \
              --arg download "https://github.com/$REPO/releases/download/$TAG/module.zip" \
-             '.version=$v | .manifest=$manifest | .download=$download' module.json > module.tmp
+             '.manifest=$manifest | .download=$download' module.json > module.tmp
           mv module.tmp module.json
           cat module.json
 
       - name: Build module.zip
+        if: steps.exists.outputs.found == 'false'
         run: zip -r module.zip module.json README.md scripts templates styles
 
-      - name: Create the release or update its files
+      - name: Publish release
+        if: steps.exists.outputs.found == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tag.outputs.name }}
+          TAG: ${{ steps.v.outputs.tag }}
         run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" module.json module.zip --clobber
-          else
-            gh release create "$TAG" module.json module.zip --title "$TAG" --generate-notes
-          fi
+          gh release create "$TAG" module.json module.zip \
+            --target "$GITHUB_SHA" --title "$TAG" --generate-notes
