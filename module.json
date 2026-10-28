@@ -1,0 +1,23 @@
+{
+  "id": "arries-bag-of-wonders",
+  "title": "Мешок чудес",
+  "description": "Лавка магического хлама: сто странных вещей наугад, на d100 или на ощупь. D&D 5e и Pathfinder 2e.",
+  "version": "1.2.0",
+  "authors": [{ "name": "grJDh", "url": "https://github.com/grJDh" }],
+  "url": "https://github.com/grJDh/arries-bag-of-wonders",
+  "bugs": "https://github.com/grJDh/arries-bag-of-wonders/issues",
+  "manifest": "https://github.com/grJDh/arries-bag-of-wonders/releases/latest/download/module.json",
+  "download": "https://github.com/grJDh/arries-bag-of-wonders/releases/download/v1.2.0/module.zip",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "relationships": {
+    "systems": [
+      { "id": "dnd5e", "type": "system", "compatibility": {} },
+      { "id": "pf2e", "type": "system", "compatibility": {} }
+    ]
+  },
+  "esmodules": ["scripts/main.mjs"],
+  "styles": ["styles/shop.css"]
+}

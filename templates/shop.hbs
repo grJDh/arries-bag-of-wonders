@@ -1,0 +1,135 @@
+<div class="mc-shop">
+  <header class="mc-head">
+    <div class="mc-sign">
+      <h1>Мешок чудес</h1>
+      <p class="mc-say">{{say}}</p>
+    </div>
+    <div class="mc-buyer">
+      <label class="mc-field">
+        <span>Покупатель</span>
+        <select name="actor" {{#if locked}}disabled{{/if}}>
+          {{#each actors}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+        </select>
+      </label>
+      {{#if track}}{{#if hasActor}}
+        <div class="mc-purse" title="Откуда: {{goldSource}}">
+          <i class="fa-solid fa-coins"></i>
+          {{#if goldKnown}}<b>{{gold}}</b>{{else}}<b>?</b>{{/if}} зм
+        </div>
+      {{/if}}{{/if}}
+    </div>
+  </header>
+
+  {{#unless hasActor}}
+    <p class="mc-warn">Нет доступных персонажей. Назначьте игроку персонажа или дайте права владельца.</p>
+  {{/unless}}
+
+  {{#if feel}}
+    <section class="mc-panel">
+      <h2>Рука в мешке</h2>
+      <p>{{feel.hint}}</p>
+      <div class="mc-lumps">
+        {{#each feel.lumps}}
+          {{#if locked}}
+            <div class="mc-lump locked"><span class="n">{{num}}</span><span class="txt">Глубже в мешке</span></div>
+          {{else if isNext}}
+            <div class="mc-lump"><span class="n">{{num}}</span><span class="txt">Здесь что-то есть…</span>
+              <button type="button" class="primary" data-action="feelNext">{{nextLabel}}</button></div>
+          {{else if released}}
+            <div class="mc-lump released"><span class="n">{{num}}</span><span class="txt">{{touch}}</span><span class="tag">Отпущено</span></div>
+          {{else}}
+            <div class="mc-lump {{#if fresh}}fresh{{/if}}"><span class="n">{{num}}</span><span class="txt">{{touch}}</span>
+              <button type="button" data-action="pull" data-index="{{i}}">Вытащить</button></div>
+          {{/if}}
+        {{/each}}
+      </div>
+    </section>
+
+  {{else if luck}}
+    <section class="mc-panel">
+      <h2>Кости брошены</h2>
+      <p>Номер решает, что достанется. Перебросить можно, только если у персонажа есть подходящее умение, и оно потратится.</p>
+      <div class="mc-rolls">
+        {{#each luck.rolls}}
+          {{#if active}}
+            <div class="mc-roll">
+              <span class="num">{{n}}</span>
+              {{#if by}}<span class="by">{{by}}</span>{{/if}}
+              <button type="button" class="primary" data-action="takeRoll" data-index="{{i}}" {{#if ../busy}}disabled{{/if}}>
+                {{#if ../luck.single}}Взять{{else}}Взять этот{{/if}}
+              </button>
+            </div>
+          {{else}}
+            <div class="mc-roll gone" title="Переброшен, этот результат взять нельзя">
+              <span class="num">{{n}}</span>
+              {{#if by}}<span class="by">{{by}}</span>{{/if}}
+              <span class="by">переброшен</span>
+            </div>
+          {{/if}}
+        {{/each}}
+      </div>
+
+      {{#if luck.hasOptions}}
+        <div class="mc-luck">
+          {{#each luck.options}}
+            <button type="button" class="mc-reroll" data-action="reroll" data-source="{{id}}" {{#unless available}}disabled{{/unless}}
+              title="{{#if reason}}{{reason}}{{else}}{{hint}}{{/if}}">
+              <i class="fa-solid fa-clover"></i>
+              <span class="lbl">{{label}}{{#if counter}} · {{counter}}{{/if}}</span>
+              <small>{{#if reason}}{{reason}}{{else}}{{hint}}{{/if}}</small>
+            </button>
+          {{/each}}
+        </div>
+      {{else}}
+        <p class="mc-none">У персонажа нет умений, позволяющих перебросить.</p>
+      {{/if}}
+    </section>
+
+  {{else}}
+
+    {{#if result}}
+      <section class="mc-item">
+        <button type="button" class="mc-x" data-action="dismiss" aria-label="Скрыть"><i class="fa-solid fa-xmark"></i></button>
+        <div class="mc-src">№{{result.num}} · {{result.source}}</div>
+        <h3>{{result.n}}</h3>
+        <p>{{result.d}}</p>
+        <p class="mc-touch">На ощупь: {{result.touchLower}}</p>
+        {{#if result.missed.length}}
+          <div class="mc-missed">А в руке ещё побывали:
+            <ul>{{#each result.missed}}<li>{{this}}</li>{{/each}}</ul>
+          </div>
+        {{/if}}
+      </section>
+    {{/if}}
+
+    <section class="mc-offers">
+      <article class="mc-tag">
+        <div class="price">{{prices.blind}}<small>зм</small></div>
+        <h2>Наугад</h2>
+        <p class="grow">Торговец сам вытаскивает первое, что попалось под руку.</p>
+        <button type="button" class="mc-buy" data-action="buy" data-tier="blind" {{#unless can.blind}}disabled{{/unless}}>Купить</button>
+      </article>
+
+      <article class="mc-tag">
+        <div class="price">{{prices.luck}}<small>зм</small></div>
+        <h2>На удачу</h2>
+        <p class="grow">Вы бросаете d100, номер в таблице решает, что достанется. Без модификаторов, но удача работает, как на любом броске.</p>
+        <button type="button" class="mc-buy" data-action="buy" data-tier="luck" {{#unless can.luck}}disabled{{/unless}}>Бросить d100</button>
+      </article>
+
+      <article class="mc-tag">
+        <div class="price">{{prices.feel}}<small>зм</small></div>
+        <h2>Пощупать</h2>
+        <p class="grow">До пяти предметов по одному. Вытащить можно только тот, что сейчас в руке: взялись за следующий, предыдущий отпустили.</p>
+        <button type="button" class="mc-buy" data-action="buy" data-tier="feel" {{#unless can.feel}}disabled{{/unless}}>Запустить руку</button>
+      </article>
+
+      <article class="mc-tag best">
+        <div class="price">{{prices.choose}}<small>зм</small></div>
+        <h2>Пощупать и выбрать</h2>
+        <p class="grow">До пяти предметов, и все остаются в руке. Вытащить можно любой из тех, что потрогали.</p>
+        <button type="button" class="mc-buy" data-action="buy" data-tier="choose" {{#unless can.choose}}disabled{{/unless}}>Запустить руку</button>
+      </article>
+    </section>
+  {{/if}}
+</div>
